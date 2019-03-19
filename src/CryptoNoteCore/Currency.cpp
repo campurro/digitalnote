@@ -550,13 +550,29 @@ difficulty_type Currency::nextDifficulty2(std::vector<uint64_t> timestamps,
 	//	return initial_difficulty_guess;
 	//}
 
+  int64_t this_timestamp, previous_timestamp;
+  previous_timestamp = timestamps[0];
+
 	// N is most recently solved block. i must be signed
 	for (int64_t i = 1; i <= N; i++) {
+    // Zawy's selfish minint + timestamp manipulation exploit patch
+    if (static_cast<int64_t>(timestamps[i]) > previous_timestamp  ) {   
+      this_timestamp = timestamps[i];
+    } else {
+      this_timestamp = previous_timestamp+1 ;   
+    }
+    ST = std::min(6*T ,this_timestamp - previous_timestamp);
+    previous_timestamp = this_timestamp;
+    L +=  ST * i ; 
+    if ( i > N-3 ) { sum_3_ST += ST; } 
+
 		// +/- FTL limits are bad timestamp protection.  6xT limits drop in D to reduce oscillations.
+    /*
 		ST = std::max(-FTL, std::min((int64_t)(timestamps[i]) - (int64_t)(timestamps[i - 1]), 6 * T));
 		L += ST * i; // Give more weight to most recent blocks.
 					 // Do these inside loop to capture -FTL and +6*T limitations.
 		if (i > N - 3) { sum_3_ST += ST; }
+    */
 	}
 
 	// Calculate next_D = avgD * T / LWMA(STs) using integer math
